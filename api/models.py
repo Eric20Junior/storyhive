@@ -19,7 +19,7 @@ class Post(models.Model):
         (1, 'Published'),
     )
 
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='book_posts')
     title = models.CharField(max_length=255, unique=True)
     description = models.TextField(max_length=100)
     body = models.TextField()

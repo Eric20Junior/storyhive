@@ -1,9 +1,10 @@
 from django.shortcuts import render
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Post
 from .serializers import PostSerializer
+from rest_framework.permissions import BasePermission, DjangoModelPermissions, SAFE_METHODS
 
 # Create your views here.
 @api_view(['GET'])
@@ -12,57 +13,58 @@ def apiOverView(request):
         'BookList':'/books/',
         'Book Detail':'/book-detail/<id>/',
         'Create':'/create-book/',
-        'Update':'/upate-book/<id>/',
-        'Delete':'/delete-book/<id>/',
+        'Update':'/update-book/',
+        'Delete':'/delete-book/',
     }
     return Response(api_urls)
 
-@api_view(['GET'])
-def BookListView(request):
+class PostUserWritePermission(BasePermission):
     """
-    List all Books.
+    This permission only allow authors of a post to edit and delete.
     """
-    books = Post.postobjects.all()
-    serializer = PostSerializer(books, many=True)
-    return Response(serializer.data)
 
-@api_view(['GET'])
-def BookDetailView(request, pk):
-    """
-    Get Detail of Books.
-    """
-    books = Post.objects.get(id=pk)
-    serializer = PostSerializer(books, many=False)
-    return Response(serializer.data)
+    message = 'Editing and deleting post is restricted to the author only'
+    
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed to any request,
+        # so we'll always allow GET, HEAD or OPTIONS requests.
+        if request.method in SAFE_METHODS:
+            return True
 
-@api_view(['POST'])
-def BookCreateView(request):
-    """
-    Create new Books.
-    """
-    serializer = PostSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Instance must have an attribute named `author`.
+        return obj.author == request.user
 
-@api_view(['GET','PUT'])
-def BookUpdateView(request, pk):
-    """
-    Update Books.
-    """
-    books = Post.objects.get(id=pk)
-    serializer = PostSerializer(instance=books, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class BookListView(generics.ListAPIView):
+    """Book list view"""
 
-@api_view(['DELETE'])
-def BookDeleteView(request, pk):
-    """
-    Delete Books.
-    """
-    books = Post.objects.get(id=pk)
-    books.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    permission_classes = [DjangoModelPermissions]
+    queryset = Post.postobjects.all()
+    serializer_class = PostSerializer
+
+class BookDetailView(generics.RetrieveAPIView):
+    """Detail View"""
+
+    permission_classes = [DjangoModelPermissions]
+    queryset = Post.postobjects.all()
+    serializer_class = PostSerializer
+
+class BookCreateView(generics.CreateAPIView):
+    """Create View"""
+
+    permission_classes = [DjangoModelPermissions]
+    queryset = Post.postobjects.all()
+    serializer_class = PostSerializer
+
+class BookUpdateView(generics.RetrieveUpdateAPIView, PostUserWritePermission):
+    """Update View"""
+    
+    permission_classes = [PostUserWritePermission]
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
+class BookDeleteView(generics.RetrieveDestroyAPIView, PostUserWritePermission):
+    """Delete view"""
+    
+    permission_classes = [PostUserWritePermission]
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer

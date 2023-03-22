@@ -12,4 +12,4 @@ class CommentSerializer(serializers.ModelSerializer):
     """Comment serializer"""
     class Meta:
         model = Comment
-        exclude = ['post']
+        fields = '__all__'

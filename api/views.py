@@ -15,6 +15,8 @@ def apiOverView(request):
         'Create':'/create-book/',
         'Update':'/update-book/',
         'Delete':'/delete-book/',
+        'Comment':'/comments/',
+        'Details':'/commets/<id>/',
     }
     return Response(api_urls)
 
@@ -69,11 +71,30 @@ class BookDeleteView(generics.RetrieveDestroyAPIView, PostUserWritePermission):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
+class CommentUserWritePermission(BasePermission):
+    """
+    This permission only allow users of a comment to edit and delete.
+    """
+
+    message = 'Editing and deleting comments is restricted to the user only'
+    
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed to any request,
+        # so we'll always allow GET, HEAD or OPTIONS requests.
+        if request.method in SAFE_METHODS:
+            return True
+
+        # Instance must have an attribute named `author`.
+        return obj.user == request.user
+
 
 class CommentList(generics.ListCreateAPIView):
+
+    permission_classes = [DjangoModelPermissions]
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
-class CommentDetail(generics.RetrieveUpdateDestroyAPIView):
+class CommentDetail(generics.RetrieveUpdateDestroyAPIView, CommentUserWritePermission):
+    permission_classes = [CommentUserWritePermission]
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer

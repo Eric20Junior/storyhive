@@ -50,3 +50,6 @@ class Comment(models.Model):
     content = models.TextField()
     reply = models.ForeignKey('Comment', null=True, on_delete=models.CASCADE, related_name='replies')
     Created_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user} {self.content}'

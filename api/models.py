@@ -3,12 +3,15 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 class Category(models.Model):
+    """Category Model"""
+
     name = models.CharField(max_length=50)
 
     def __str__(self):
         return self.name
     
 class Post(models.Model):
+    """Post Model"""
 
     class PostObjects(models.Manager):
         def get_queryset(self):
@@ -37,3 +40,13 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+class Comment(models.Model):
+    """
+        Comment Model
+    """
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    reply = models.ForeignKey('Comment', null=True, on_delete=models.CASCADE, related_name='replies')
+    Created_on = models.DateTimeField(auto_now_add=True)
